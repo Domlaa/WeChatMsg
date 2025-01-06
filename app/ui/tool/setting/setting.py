@@ -1,12 +1,9 @@
-import json
 import os.path
 import time
 
-import requests
 from PyQt5.QtCore import pyqtSignal, QThread
 from PyQt5.QtWidgets import QWidget, QMessageBox
-from app.config import SEND_LOG_FLAG
-from app.person import Me
+
 from .settingUi import Ui_Form
 
 Stylesheet = """
@@ -84,7 +81,7 @@ class SettingControl(QWidget, Ui_Form):
         self.btn_addstopword.clicked.connect(self.add_stopwords)
         self.btn_addnewword_2.clicked.connect(self.add_new_words)
         self.commandLinkButton_send_error_log.clicked.connect(self.show_info)
-        self.btn_send_error_log.clicked.connect(self.send_error_log)
+        # self.btn_send_error_log.clicked.connect(self.send_error_log)
         self.init_ui()
         self.read_data()
 
@@ -144,17 +141,6 @@ class SettingControl(QWidget, Ui_Form):
             f.write(new_words)
         QMessageBox.about(self, "添加成功", "自定义词添加成功")
 
-    def send_error_log(self):
-        self.send_thread = MyThread()
-        self.send_thread.signal.connect(self.show_resp)
-        self.send_thread.start()
-
-    def show_resp(self, message):
-        if message.get('code') == 200:
-            QMessageBox.about(self, "发送结果", f"日志发送成功\n{message.get('message')}")
-        else:
-            QMessageBox.about(self, "发送结果", f"{message.get('code')}:{message.get('errmsg')}")
-
 
 class MyThread(QThread):
     signal = pyqtSignal(dict)
@@ -176,33 +162,5 @@ class MyThread(QThread):
     def __del__(self):
         pass
 
-    def send_error_msg(self, message):
-        url = "http://api.lc044.love/error"
-        if not message:
-            return {
-                'code': 201,
-                'errmsg': '日志为空'
-            }
-        data = {
-            'username': Me().wxid,
-            'error': message
-        }
-        try:
-            response = requests.post(url, json=data)
-            if response.status_code == 200:
-                resp_info = response.json()
-                return resp_info
-            else:
-                return {
-                    'code': 503,
-                    'errmsg': '服务器错误'
-                }
-        except:
-            return {
-                'code': 404,
-                'errmsg': '客户端错误'
-            }
-
     def run(self):
-        resp_info = self.send_error_msg(self.message)
-        self.signal.emit(resp_info)
+        pass

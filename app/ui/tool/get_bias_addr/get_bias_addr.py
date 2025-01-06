@@ -1,13 +1,7 @@
-import json
-import os.path
-from urllib.parse import urljoin
-
-import requests
 from PyQt5.QtCore import pyqtSignal, QThread
 from PyQt5.QtWidgets import QWidget, QMessageBox
 
 from app.components.QCursorGif import QCursorGif
-from app.config import SERVER_API_URL
 from app.decrypt.get_bias_addr import BiasAddr
 from .getBiasAddrUi import Ui_Form
 
@@ -85,7 +79,7 @@ class GetBiasAddrControl(QWidget, Ui_Form, QCursorGif):
                          i for i in range(8)], self)
         self.setCursorTimeout(100)
         self.btn_get_bias_addr.clicked.connect(self.get_bias_addr)
-        self.commandLinkButton.clicked.connect(self.show_info)
+        # self.commandLinkButton.clicked.connect(self.show_info)
         self.checkBox_send_error_log.clicked.connect(self.set_error_log)
 
     def set_error_log(self):
@@ -93,19 +87,6 @@ class GetBiasAddrControl(QWidget, Ui_Form, QCursorGif):
             self.label_error_log.setText('开')
         else:
             self.label_error_log.setText('关')
-
-    def show_info(self):
-        QMessageBox.information(self, "收集版本信息",
-                                "为了适配更多版本，需要收集微信的版本信息，该操作不会上传包括手机号、微信号、昵称等在内的任何信息\n示例数据：\n\"3.9.9.27\": [68065304, 0, 68065112, 0, 68066576]"
-                                )
-
-    def upload(self, version_data):
-        url = urljoin(SERVER_API_URL, 'wxBiasAddr')
-        try:
-            requests.post(url, json={'bias_dict': version_data})
-            print('版本信息上传成功')
-        except:
-            pass
 
     def get_bias_addr(self):
         account = self.lineEdit_wx_alias.text()
@@ -123,8 +104,8 @@ class GetBiasAddrControl(QWidget, Ui_Form, QCursorGif):
         self.thread.start()
 
     def set_bias_addr(self, data):
-        if self.checkBox_send_error_log.isChecked():
-            self.upload(data)
+        # if self.checkBox_send_error_log.isChecked():
+        #     self.upload(data)
         self.stopBusy()
         self.biasAddrSignal.emit(data)
 

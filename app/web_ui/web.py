@@ -10,7 +10,6 @@ from pyecharts.charts import Bar
 from app.DataBase import msg_db, micro_msg_db
 from app.DataBase.hard_link import decodeExtraBuf
 from app.analysis import analysis
-from app.config import SERVER_API_URL
 from app.person import Contact, Me, ContactDefault
 from app.util.emoji import get_most_emoji
 from app.util.region_conversion import conversion_region_to_chinese
@@ -24,9 +23,6 @@ start_time = '2023-1-01 00:00:00'
 end_time = '2023-12-31 23:59:59'
 time_range = (start_time, end_time)
 html: str = ''
-
-api_url = urljoin(SERVER_API_URL,'upload')
-
 
 
 def get_contact(wxid) -> ContactDefault | Contact:
@@ -154,25 +150,6 @@ def christmas(wxid):
     html = render_template("christmas.html", **data, **wordcloud_cloud_data, **time_data, **month_data, **calendar_data,
                            **emoji_data)
     return html
-
-
-@app.route('/upload')
-def upload():
-    global html
-    data = {
-        'html_content': html,
-        'wxid': contact.wxid,
-        'username': Me().wxid,
-        'token':Me().token,
-        'type': 'contact'
-    }
-    response = requests.post(api_url, data=data)
-    print(response)
-    print(response.json())
-    response = make_response(response.json())
-    response.headers.add('Access-Control-Allow-Origin', '*')  # Replace '*' with specific origins if needed
-    response.headers.add('Content-Type', 'application/json')
-    return response
 
 
 def set_text(text):

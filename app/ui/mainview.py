@@ -31,7 +31,7 @@ from app.ui.home.home_window import HomeWindow
 from .menu.export import ExportDialog
 from app.util.exporter.output import Output
 from ..components.QCursorGif import QCursorGif
-from ..config import INFO_FILE_PATH, DB_DIR, SERVER_API_URL, version
+from ..config import INFO_FILE_PATH, DB_DIR
 from ..log import logger
 from ..person import Me
 
@@ -334,13 +334,7 @@ class MainWinController(QMainWindow, mainwindow.Ui_MainWindow, QCursorGif):
                          i for i in range(8)])
         self.setCursorTimeout(100)
         self.startBusy()
-        self.action_update.triggered.connect(self.update)
-        self.action_help_faq.triggered.connect(
-            lambda: QDesktopServices.openUrl(QUrl("https://memotrace.cn/doc/posts/error/")))
         self.about_view = AboutDialog(main_window=self, parent=self)
-        self.update_thread = UpdateThread(check_time=True)
-        self.update_thread.updateSignal.connect(self.show_update)
-        self.update_thread.start()
 
     def setCurrentIndex(self, row):
         self.stackedWidget.setCurrentIndex(row)
@@ -424,52 +418,6 @@ class MainWinController(QMainWindow, mainwindow.Ui_MainWindow, QCursorGif):
         self.stopBusy()
         QMessageBox.about(self, "提醒", msg)
 
-    def update(self):
-        self.update_thread = UpdateThread()
-        self.update_thread.updateSignal.connect(self.show_update)
-        self.update_thread.start()
-
-    def show_update(self, update_info):
-        if not update_info.get('update_available'):
-            QMessageBox.information(self, '更新通知', "当前已是最新版本")
-            return
-        detail = f'''
-        当前版本:{version},最新版本:{update_info.get('latest_version')}<br>
-        更新内容:
-        {update_info.get('description')}
-        <br><a href='https://memotrace.cn/'>查看详情</a>
-        '''
-
-        # 创建一个 QMessageBox 对象
-        error_box = QMessageBox()
-
-        # 设置对话框的标题
-        error_box.setWindowTitle("更新通知")
-        pixmap = QPixmap(Icon.logo_ico_path)
-        icon = QIcon(pixmap)
-        error_box.setWindowIcon(icon)
-        # 设置对话框的文本消息
-        error_box.setText(detail)
-        # 设置对话框的图标，使用 QMessageBox.Critical 作为图标类型
-        error_box.setIcon(QMessageBox.Information)
-        # 添加一个“确定”按钮
-        # 添加自定义按钮
-        custom_button = error_box.addButton('更新', QMessageBox.ActionRole)
-        is_update_online = update_info.get('is_update_online')
-        custom_button.clicked.connect(lambda x: self.update_(update_info.get('download_url'), is_update_online))
-        error_box.addButton(QMessageBox.Cancel)
-        # 显示对话框
-        error_box.exec_()
-
-    def update_(self, url, is_update_online):
-        QDesktopServices.openUrl(QUrl("https://memotrace.cn/"))
-
-    def about(self):
-        """
-        关于
-        """
-        self.about_view.show()
-
     def decrypt_success(self):
         QMessageBox.about(self, "解密成功", "请重新启动")
         self.close()
@@ -484,41 +432,3 @@ class MainWinController(QMainWindow, mainwindow.Ui_MainWindow, QCursorGif):
         super().close()
         self.exitSignal.emit(True)
 
-
-class UpdateThread(QThread):
-    updateSignal = pyqtSignal(dict)
-
-    def __init__(self, check_time=False):
-        super().__init__()
-        self.check_time = check_time
-
-    def run(self):
-        now_time = time.time()
-        try:
-            with open(INFO_FILE_PATH, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            update_time = data.get('update_time')
-            if update_time:
-                if now_time - update_time < 14400 and self.check_time:
-                    return
-        except:
-            os.makedirs(os.path.dirname(INFO_FILE_PATH), exist_ok=True)
-            data = {
-                'update_time': now_time
-            }
-        data['update_time'] = now_time
-
-        with open(INFO_FILE_PATH, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
-        server_url = urljoin(SERVER_API_URL, 'update')
-        data = {'version': version}
-        try:
-            response = requests.post(server_url, json=data)
-            if response.status_code == 200:
-                update_info = response.json()
-                self.updateSignal.emit(update_info)
-            else:
-                print("检查更新失败")
-        except:
-            update_info = {'update_available': False}
-            self.updateSignal.emit(update_info)

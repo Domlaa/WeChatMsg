@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QWidget, QMessageBox, QFileDialog
 from app.DataBase import msg_db, misc_db, close_db
 from app.DataBase.merge import merge_databases, merge_MediaMSG_databases
 from app.components.QCursorGif import QCursorGif
-from app.config import INFO_FILE_PATH, DB_DIR, SERVER_API_URL
+from app.config import INFO_FILE_PATH, DB_DIR
 from app.decrypt import get_wx_info, decrypt
 from app.log import logger
 from app.util import path
@@ -289,22 +289,22 @@ class MyThread(QThread):
     def __del__(self):
         pass
 
-    def get_bias_add(self, version):
-        url = urljoin(SERVER_API_URL, 'wxBiasAddr')
-        data = {
-            'version': version
-        }
-        try:
-            response = requests.get(url, json=data)
-            print(response)
-            print(response.text)
-            if response.status_code == 200:
-                update_info = response.json()
-                return update_info
-            else:
-                return {}
-        except:
-            return {}
+    # def get_bias_add(self, version):
+    #     url = urljoin(SERVER_API_URL, 'wxBiasAddr')
+    #     data = {
+    #         'version': version
+    #     }
+    #     try:
+    #         response = requests.get(url, json=data)
+    #         print(response)
+    #         print(response.text)
+    #         if response.status_code == 200:
+    #             update_info = response.json()
+    #             return update_info
+    #         else:
+    #             return {}
+    #     except:
+    #         return {}
 
     def run(self):
         if self.version_list:
@@ -317,6 +317,7 @@ class MyThread(QThread):
             with open(file_path, "r", encoding="utf-8") as f:
                 VERSION_LIST = json.loads(f.read())
         try:
+            # get_info 可能返回错误码
             result = get_wx_info.get_info(VERSION_LIST)
             if result == -1:
                 result = [result]
@@ -326,14 +327,18 @@ class MyThread(QThread):
                 result = [result]
             elif isinstance(result, str):
                 version = result
+                result = [-2, version]
                 # version = '3.9.9.43'
-                version_bias = self.get_bias_add(version)
-                if version_bias.get(version):
-                    logger.info(f"从云端获取内存基址:{version_bias}")
-                    result = get_wx_info.get_info(version_bias)
-                else:
-                    logger.info(f"从云端获取内存基址失败:{version}")
-                    result = [-2, version]
+                # version_bias = self.get_bias_add(version)
+                # if version_bias.get(version):
+                #     logger.info(f"从云端获取内存基址:{version_bias}")
+                #     result = get_wx_info.get_info(version_bias)
+                # else:
+                #     logger.info(f"从云端获取内存基址失败:{version}")
+                #     result = [-2, version]
+            elif isinstance(result, list):
+                print(f"result type is list: {result}")
+
         except:
             logger.error(traceback.format_exc())
             result = [-10086]
