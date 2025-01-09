@@ -12,6 +12,7 @@ from pyecharts.charts import WordCloud, Calendar, Bar, Line, Pie, Map
 
 from app.person import Contact, Me
 from app.util.region_conversion import conversion_province_to_chinese
+from datetime import datetime
 
 os.makedirs('./data/聊天统计/', exist_ok=True)
 
@@ -114,7 +115,7 @@ def get_wordcloud(text):
     }
 
 
-def wordcloud_christmas(wxid,time_range=None, year='2023'):
+def wordcloud_christmas(wxid, time_range=None, year='2023'):
     import jieba
 
     txt_messages = msg_db.get_messages_by_type(wxid, MsgType.TEXT, time_range=time_range)
@@ -322,6 +323,13 @@ def sender(wxid, time_range, my_name='', ta_name=''):
     send_num = 0  # 发送消息的数量
     # 周数据 字典 (key=周几, value=count)
     weekday_count = {}
+    # 发言次数 字典 (key=remark, value=count)
+    chat_count = {}
+    # 发言天数 字典 (key=remark, value=count)
+    chat_day_count = {}
+    # 熬夜冠军 字典 (key=remark, value=count)
+    night_owls = {}
+
     for message in msg_data:
         type_ = message[2]
         is_sender = message[4]
@@ -329,6 +337,7 @@ def sender(wxid, time_range, my_name='', ta_name=''):
         timestamp = message[5]
         # 计算是周几
         weekday = get_weekday(timestamp)
+        str_content = message[7]
         str_time = message[8]
         # 如果是自己发的消息 is_sender = 1 否则 = 0
         send_num += is_sender
@@ -346,15 +355,45 @@ def sender(wxid, time_range, my_name='', ta_name=''):
             weekday_count[weekday] += 1
         else:
             weekday_count[weekday] = 1
+        if wxid.__contains__('@chatroom'):
+            contact = message[13]
+            unique_id = get_unique_id(contact)
+            # if not contact.nickName:
+            #      unique_id = contract.nickName
+            # elif not contact.remark:
+            #     unique_id = contract.remark
+            # else:
+            #     unique_id = contract.wxid
+            if not unique_id:
+                # print(f"uniqueId null: {str_content}")
+                pass
+            else:
+                # print(f"{unique_id} : {str_content}")
+                if unique_id in chat_count:
+                    chat_count[unique_id] += 1
+                else:
+                    print(f"id: {unique_id} , remark: {contact.remark}, nick:{contact.nickName}, name:{contact}")
+                    chat_count[unique_id] = 1
+
+                if unique_id in chat_day_count:
+                    chat_day_count[unique_id] += 1
+                else:
+                    print(f"id: {unique_id} , remark: {contact.remark}, nick:{contact.nickName}, name:{contact}")
+                    chat_day_count[unique_id] = 1
+
     # 这里就能得到收到的消息数
     receive_num = len(msg_data) - send_num
     data = [[types_.get(key), value] for key, value in types_count.items() if key in types_]
-    print(f"[{my_name}] <--> [{ta_name}] 数据统计： 消息占比：{data}, 收发：{receive_num}/{send_num}, 星期分布: {weekday_count}")
+    print(
+        f"[{my_name}] <--> [{ta_name}] 数据统计： 消息占比：{data}, 收发：{receive_num}/{send_num}, 星期分布: {weekday_count}, 发言次数: {chat_count}")
     if not data:
         return {
             'chart_data_sender': None,
             'chart_data_types': None,
             'chart_data_weekday': None,
+            'chart_data_chat': None,
+            'chart_data_chat_day': None,
+            'chart_data_night_owls': None,
         }
     p1 = (
         Pie()
@@ -406,6 +445,39 @@ def sender(wxid, time_range, my_name='', ta_name=''):
         )
         # .render("./data/聊天统计/pie_weekdays.html")  # （注释掉的代码）将图表渲染为 HTML 文件，保存到指定路径。
     )
+    chat_bar = (
+        Bar()
+        .add_xaxis(list(chat_count.keys()))  # 从字典的键中获取 x 轴数据（姓名）
+        .add_yaxis("发言次数", list(chat_count.values()))  # 从字典的值中获取 y 轴数据（得分）
+        .reversal_axis()  # 转换坐标轴，使其变为水平条形图
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title="活跃度统计"),
+            xaxis_opts=opts.AxisOpts(name="发言次数", type_="value"),
+            yaxis_opts=opts.AxisOpts(name="群员"),
+        )
+    )
+    chat_day_bar = (
+        Bar()
+        .add_xaxis(list(chat_day_count.keys()))  # 从字典的键中获取 x 轴数据（姓名）
+        .add_yaxis("发言天数", list(chat_day_count.values()))  # 从字典的值中获取 y 轴数据（得分）
+        .reversal_axis()  # 转换坐标轴，使其变为水平条形图
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title="活跃天数统计"),
+            xaxis_opts=opts.AxisOpts(name="天数", type_="value"),
+            yaxis_opts=opts.AxisOpts(name="群员"),
+        )
+    )
+    night_owls_bar = (
+        Bar()
+        .add_xaxis(list(chat_day_count.keys()))  # 从字典的键中获取 x 轴数据（姓名）
+        .add_yaxis("熬夜冠军", list(chat_day_count.values()))  # 从字典的值中获取 y 轴数据（得分）
+        .reversal_axis()  # 转换坐标轴，使其变为水平条形图
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title="熬夜冠军统计"),
+            xaxis_opts=opts.AxisOpts(name="次数", type_="value"),
+            yaxis_opts=opts.AxisOpts(name="群员"),
+        )
+    )
     # 将图表的配置项（options）导出为带引号的JSON字符串
     return {
         # 收发消息占比 饼图
@@ -414,7 +486,44 @@ def sender(wxid, time_range, my_name='', ta_name=''):
         'chart_data_types': p1.dump_options_with_quotes(),
         # 消息在一周的占比 饼图
         'chart_data_weekday': p3.dump_options_with_quotes(),
+        # 活跃度排行
+        'chart_data_chat': chat_bar.dump_options_with_quotes(),
+        # 活跃天数排行
+        'chart_data_chat_day': chat_day_bar.dump_options_with_quotes(),
+        # 熬夜冠军排行
+        'chart_data_night_owls': night_owls_bar.dump_options_with_quotes(),
     }
+
+
+def get_unique_id(contact) -> str:
+    if contact.remark:
+        return contact.remark
+    if contact.nickName:
+        return contact.nickName
+    # TODO 昵称相同的情况
+    # if contact.remark == contact.wxid:
+    return contact.wxid
+
+def find_night_owls(chat_logs):
+    night_owls = {}
+
+    # 过滤出凌晨0点到5点之间的记录
+    for log in chat_logs:
+        timestamp = datetime.strptime(log["timestamp"], "%Y-%m-%d %H:%M:%S")
+        hour = timestamp.hour
+
+        # 检查时间是否在0点到5点之间
+        if 0 <= hour < 6:
+            date_str = timestamp.date()  # 获取日期部分
+            if date_str not in night_owls:
+                night_owls[date_str] = log
+            else:
+                # 比较当前记录的时间是否比已有记录的时间晚
+                existing_timestamp = datetime.strptime(night_owls[date_str]["timestamp"], "%Y-%m-%d %H:%M:%S")
+                if timestamp > existing_timestamp:
+                    night_owls[date_str] = log
+
+    return night_owls
 
 
 def contacts_analysis(contacts):
@@ -451,7 +560,7 @@ def contacts_analysis(contacts):
     data = Counter(provinces)
     data = [[k, v] for k, v in data.items()]
     print(data)
-    max_ = max(list(map(lambda x:x[1],data)))
+    max_ = max(list(map(lambda x: x[1], data)))
     c = (
         Map()
         .add("分布", data, "china")
@@ -546,9 +655,10 @@ def my_message_counter(time_range, my_name=''):
 
 if __name__ == '__main__':
     from app.web_ui.web import get_contact
+
     # wxid = 'wxid_64lta87ier9q22'
-    # 39333455129  8203426743
-    wxid = '39333455129@chatroom'
+    # 39333455129  8203426743 22050612613
+    wxid = '22050612613@chatroom'
 
     msg_db.init_database(path='../DataBase/Msg/MSG.db')
 

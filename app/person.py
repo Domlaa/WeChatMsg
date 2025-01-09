@@ -69,7 +69,7 @@ class Me(Person):
         super().__init__()
         self.avatar = None
         self.avatar_path = ':/icons/icons/default_avatar.svg'
-        self.wxid = 'wxid_00112233'
+        self.wxid = 'wxid_myself'
         self.wx_dir = ''
         self.name = ''
         self.mobile = ''

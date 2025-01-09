@@ -222,7 +222,7 @@ class Msg:
             result = self.cursor.fetchall()
         finally:
             lock.release()
-        print(f"find {username_} msg: {len(result)}")
+        print(f"find {username_} msg: {len(result)} ")
         return parser_chatroom_message(result) if username_.__contains__('@chatroom') else result
         # result.sort(key=lambda x: x[5])
         # return self.add_sender(result)

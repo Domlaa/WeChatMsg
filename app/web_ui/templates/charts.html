@@ -35,6 +35,7 @@
     <div id="echarts-sender" style="width: 800px; height: 600px;"></div>
     <div id="echarts-types" style="width: 800px; height: 600px;"></div>
     <div id="echarts-weekday" style="width: 800px; height: 600px;"></div>
+    <div id="echarts-chat" style="width: 800px; height: 600px;"></div>
 </div>
 <div id="echarts-wordcloud" style="width: 800px; height: 800px;"></div>
 <div id="echarts-calendar" style="width: 800px; height: 300px;"></div>
@@ -137,12 +138,19 @@ setInterval(getRTime, 1000);
             var myChart = echarts.init(document.getElementById('echarts-sender'));
             var option = chartOptions.chart_data_sender;
             myChart.setOption(JSON.parse(option));
+
             var myChart1 = echarts.init(document.getElementById('echarts-types'));
             var option = chartOptions.chart_data_types;
             myChart1.setOption(JSON.parse(option));
+
             var myChart2 = echarts.init(document.getElementById('echarts-weekday'));
             var option = chartOptions.chart_data_weekday;
             myChart2.setOption(JSON.parse(option));
+
+            var myChart3 = echarts.init(document.getElementById('echarts-chat'));
+            var option = chartOptions.chart_data_chat;
+            myChart3.setOption(JSON.parse(option));
+            
         });
     }
     var time_range=['1997-01-01 00:00:00','2035-01-01 00:00:00']
