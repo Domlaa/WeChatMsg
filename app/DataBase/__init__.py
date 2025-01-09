@@ -37,4 +37,5 @@ def init_db():
     media_msg_db.init_database()
 
 
-__all__ = ['misc_db', 'micro_msg_db', 'msg_db', 'hard_link_db', 'MsgType', "media_msg_db", "close_db"]
+# __all__：是一个特殊的变量，定义了当使用 from module import * 导入模块时，哪些对象会被导入。
+__all__ = ['misc_db', 'micro_msg_db', 'msg_db', 'hard_link_db', 'MsgType', "media_msg_db", "close_db", "init_db"]

@@ -34,6 +34,7 @@ class MicroMsg:
                 self.DB = sqlite3.connect(db_path, check_same_thread=False)
                 # '''创建游标'''
                 self.cursor = self.DB.cursor()
+                print("init MicroMsg db success")
                 self.open_flag = True
                 if lock.locked():
                     lock.release()

@@ -3,6 +3,7 @@ import traceback
 
 from app.log import logger
 from app.person import Me
+from PyQt5.QtGui import QPixmap
 
 # 图片字节头信息，
 # [0][1]为jpg头信息，
@@ -11,6 +12,26 @@ from app.person import Me
 pic_head = [0xff, 0xd8, 0x89, 0x50, 0x47, 0x49]
 # 解密码
 decode_code = 0
+
+
+def pixmap_to_bytes(pixmap: QPixmap, format: str = 'PNG') -> bytes:
+    from PyQt5.QtCore import QBuffer, QIODevice
+    """
+    将 QPixmap 转换为 bytes 数据
+
+    :param pixmap: QPixmap 对象
+    :param format: 图像格式，如 'PNG' 或 'JPG'
+    :return: 图像的二进制数据
+    """
+    # 创建一个 QBuffer 对象，将其设置为 QIODevice.WriteOnly 模式
+    byte_array = QBuffer()
+    byte_array.open(QIODevice.WriteOnly)
+
+    # 保存 QPixmap 到 QBuffer 中，格式为指定的格式（例如 PNG）
+    pixmap.save(byte_array, format)
+
+    # 返回字节数据
+    return byte_array.data()
 
 
 def get_code(dat_read) -> tuple[int, int]:

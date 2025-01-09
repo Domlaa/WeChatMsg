@@ -34,6 +34,7 @@ from ..components.QCursorGif import QCursorGif
 from ..config import INFO_FILE_PATH, DB_DIR
 from ..log import logger
 from ..person import Me
+from ..util.image import pixmap_to_bytes
 
 try:
     from app.ui.menu.about_dialog import AboutDialog
@@ -288,11 +289,11 @@ class MainWinController(QMainWindow, mainwindow.Ui_MainWindow, QCursorGif):
         self.setStyleSheet(Stylesheet)
         self.listWidget.clear()
         self.resize(QSize(800, 600))
-        self.info = QLabel(self)
-        self.info.setText('Tips ')
-        self.info.setAlignment(Qt.AlignRight)
-        self.statusbar.addPermanentWidget(self.info)
-        self.statusbar.showMessage('遇到问题可添加QQ群咨询', 5000)
+        # self.info = QLabel(self)
+        # self.info.setText('Tips ')
+        # self.info.setAlignment(Qt.AlignRight)
+        # self.statusbar.addPermanentWidget(self.info)
+        # self.statusbar.showMessage('遇到问题可添加QQ群咨询', 5000)
         self.load_flag = False
         self.load_data()
         self.load_num = 0
@@ -351,15 +352,18 @@ class MainWinController(QMainWindow, mainwindow.Ui_MainWindow, QCursorGif):
         self.stackedWidget.addWidget(window)
 
     def set_my_info(self, wxid):
-        self.avatar = QPixmap()
+        self.avatar = bytes()
+        avatar = QPixmap()
         img_bytes = misc_db.get_avatar_buffer(wxid)
         if not img_bytes:
             return
         if img_bytes[:4] == b'\x89PNG':
-            self.avatar.loadFromData(img_bytes, format='PNG')
+            avatar.loadFromData(img_bytes, format='PNG')
         else:
-            self.avatar.loadFromData(img_bytes, format='jfif')
-        self.avatar.scaled(60, 60)
+            avatar.loadFromData(img_bytes, format='jfif')
+        avatar.scaled(60, 60)
+        self.avatar = pixmap_to_bytes(avatar)
+
         contact_info_list = micro_msg_db.get_contact_by_username(wxid)
         if not contact_info_list:
             close_db()
@@ -374,7 +378,7 @@ class MainWinController(QMainWindow, mainwindow.Ui_MainWindow, QCursorGif):
         me.set_avatar(img_bytes)
         me.smallHeadImgUrl = contact_info_list[7]
         self.myavatar.setScaledContents(True)
-        self.myavatar.setPixmap(self.avatar)
+        self.myavatar.setPixmap(avatar)
 
     def stop_loading(self, a0):
         self.label.setVisible(False)

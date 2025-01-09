@@ -23,7 +23,7 @@ class ExceptionHanding:
         elif isinstance(self.exc_value,KeyboardInterrupt):
             return ''
         else:
-            return '未知错误类型，可参考 https://blog.lc044.love/post/7 解决该问题\n温馨提示：重启电脑可解决80%的问题'
+            return '未知错误类型'
 
     def __str__(self):
         errmsg = f'{self.error_message}\n{self.parser_exc()}'
@@ -36,8 +36,7 @@ def excepthook(exc_type, exc_value, traceback_):
     # 在这里处理全局异常
 
     error_message = ExceptionHanding(exc_type, exc_value, traceback_)
-    txt = '您可添加QQ群发送log文件以便解决该问题'
-    msg = f"Exception Type: {exc_type.__name__}\nException Value: {exc_value}\ndetails: {error_message}\n\n{txt}"
+    msg = f"Exception Type: {exc_type.__name__}\nException Value: {exc_value}\ndetails: {error_message}\n\n"
     print(msg)
 
     # 调用原始的 excepthook，以便程序正常退出

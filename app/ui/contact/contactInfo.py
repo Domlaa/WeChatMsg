@@ -73,10 +73,10 @@ class ContactInfo(QWidget, Ui_Form):
         self.toolButton_output.showMenu()
 
     def analysis(self):
-        # QDesktopServices.openUrl(QUrl("https://memotrace.cn/"))
         self.report_thread = ReportThread(self.contact)
         # self.report_thread.okSignal.connect(lambda x: QDesktopServices.openUrl(QUrl("http://127.0.0.1:21314")))
         self.report_thread.start()
+        # todo
         QDesktopServices.openUrl(QUrl(f"http://127.0.0.1:21314/charts/{self.contact.wxid}"))
 
     def annual_report(self):
@@ -105,7 +105,8 @@ class ContactInfo(QWidget, Ui_Form):
         QDesktopServices.openUrl(QUrl(f"http://127.0.0.1:21314/christmas/{self.contact.wxid}"))
 
     def emotionale_Analysis(self):
-        QDesktopServices.openUrl(QUrl("https://memotrace.cn/"))
+        QMessageBox.about(self, "提醒", "还没做")
+        # QDesktopServices.openUrl(QUrl("https://memotrace.cn/"))
 
     def back(self):
         """

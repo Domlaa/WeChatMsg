@@ -29,6 +29,7 @@ class Ui_Frame(object):
         self.gridLayout_2 = QtWidgets.QGridLayout()
         self.gridLayout_2.setVerticalSpacing(2)
         self.gridLayout_2.setObjectName("gridLayout_2")
+        # Qt 框架中用于显示文本或图片的控件
         self.l_avatar = QtWidgets.QLabel(Frame)
         self.l_avatar.setMinimumSize(QtCore.QSize(80, 80))
         self.l_avatar.setMaximumSize(QtCore.QSize(80, 80))

@@ -3,12 +3,13 @@ import subprocess
 import platform
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import QSize, pyqtSignal, Qt, QThread
+from PyQt5.QtCore import QSize, pyqtSignal, Qt, QThread, QByteArray
 from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QPolygon, QFontMetrics
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QSizePolicy, QVBoxLayout, QSpacerItem, \
     QScrollArea
 
 from app.components.scroll_bar import ScrollBar
+from app.ui.Icon import Icon
 
 
 class MessageType:
@@ -103,11 +104,26 @@ class Notice(QLabel):
 class Avatar(QLabel):
     def __init__(self, avatar, parent=None):
         super().__init__(parent)
+        # print(f"avatar type: {type(avatar)}")
         if isinstance(avatar, str):
             self.setPixmap(QPixmap(avatar).scaled(45, 45))
             self.image_path = avatar
         elif isinstance(avatar, QPixmap):
             self.setPixmap(avatar.scaled(45, 45))
+        elif isinstance(avatar, bytes):
+            avt = QPixmap()
+            # print(f"avatar is bytes")
+            if avatar[:4] == b'\x89PNG':
+                avt.loadFromData(avatar, format='PNG')
+            else:
+                avt.loadFromData(avatar, format='jfif')
+            self.setPixmap(avt.scaled(45, 45))
+        elif isinstance(avatar, QByteArray):
+            avt = QPixmap()
+            avt.loadFromData(avatar)
+            self.setPixmap(avt.scaled(45, 45))
+        elif avatar is None:
+            self.setPixmap(QPixmap(Icon.Default_avatar_path).scaled(45, 45))
         self.setFixedSize(QSize(45, 45))
 
 

@@ -68,10 +68,11 @@ class ChatWindow(QWidget, Ui_Form):
         self.listWidget.currentRowChanged.connect(self.setCurrentIndex)
         self.listWidget.setCurrentRow(0)
         self.stackedWidget.setCurrentIndex(0)
-        pixmap = QPixmap(Icon.Default_avatar_path).scaled(45, 45)
-        contact_item = ContactQListWidgetItem('首页123', '', pixmap)
-        self.listWidget.addItem(contact_item)
-        self.listWidget.setItemWidget(contact_item, contact_item.widget)
+
+        # pixmap = QPixmap(Icon.Default_avatar_path).scaled(45, 45)
+        # contact_item = ContactQListWidgetItem('首页123', '', pixmap)
+        # self.listWidget.addItem(contact_item)
+        # self.listWidget.setItemWidget(contact_item, contact_item.widget)
         # chat_info_window = Me()
         # self.stackedWidget.addWidget(chat_info_window)
 
@@ -108,6 +109,10 @@ class ChatWindow(QWidget, Ui_Form):
         self.listWidget.setCurrentRow(index)
 
     def show_chat(self, contact):
+        """
+             显示聊天
+             @return:
+             """
         # return
         self.contacts[0].append(contact.remark)
         self.contacts[1].append(contact.nickName)

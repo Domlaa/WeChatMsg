@@ -5,7 +5,10 @@ import json
 import os.path
 import re
 from typing import Dict
+
 from PyQt5.QtGui import QPixmap
+
+# from PyQt5.QtGui import QPixmap
 
 from app.config import INFO_FILE_PATH
 from app.ui.Icon import Icon
@@ -26,17 +29,21 @@ class Person:
     def __init__(self):
         self.avatar_path = None
         self.avatar = None
-        self.avatar_path_qt = Icon.Default_avatar_path
+        # self.avatar_path_qt = Icon.Default_avatar_path
         self.detail = {}
 
     def set_avatar(self, img_bytes):
+        from app.util.image import pixmap_to_bytes
         if not img_bytes:
-            self.avatar.load(Icon.Default_avatar_path)
+            self.avatar = None
             return
+        avatar = QPixmap()
         if img_bytes[:4] == b'\x89PNG':
-            self.avatar.loadFromData(img_bytes, format='PNG')
+            avatar.loadFromData(img_bytes, format='PNG')
         else:
-            self.avatar.loadFromData(img_bytes, format='jfif')
+            avatar.loadFromData(img_bytes, format='jfif')
+        self.avatar = pixmap_to_bytes(avatar)
+        # print(f"set avatar: {self.avatar}")
 
     def save_avatar(self, path=None):
         if not self.avatar:
@@ -52,6 +59,7 @@ class Person:
         self.avatar_path = save_path
         if not os.path.exists(save_path):
             self.avatar.save(save_path)
+            # TODO
             print('保存头像', save_path)
 
 
@@ -59,7 +67,7 @@ class Person:
 class Me(Person):
     def __init__(self):
         super().__init__()
-        self.avatar = QPixmap(Icon.Default_avatar_path)
+        self.avatar = None
         self.avatar_path = ':/icons/icons/default_avatar.svg'
         self.wxid = 'wxid_00112233'
         self.wx_dir = ''
@@ -92,7 +100,7 @@ class Contact(Person):
         self.remark = re.sub(r'[\\/:*?"<>|\s\.]', '_', self.remark)
         self.smallHeadImgUrl = contact_info.get('smallHeadImgUrl')
         self.smallHeadImgBLOG = b''
-        self.avatar = QPixmap()
+        self.avatar = None
         self.avatar_path = Icon.Default_avatar_path
         self.is_chatroom = self.wxid.__contains__('@chatroom')
         self.detail: Dict = contact_info.get('detail')
@@ -112,7 +120,7 @@ class Contact(Person):
 class ContactDefault(Person):
     def __init__(self, wxid=""):
         super().__init__()
-        self.avatar = QPixmap(Icon.Default_avatar_path)
+        self.avatar = None
         self.avatar_path = ':/icons/icons/default_avatar.svg'
         self.wxid = wxid
         self.remark = wxid

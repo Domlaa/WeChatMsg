@@ -6,11 +6,11 @@ from typing import List
 
 import jieba
 
-from app.DataBase import msg_db, MsgType
+from app.DataBase import msg_db, MsgType, misc_db, micro_msg_db, hard_link_db, media_msg_db, init_db
 from pyecharts import options as opts
 from pyecharts.charts import WordCloud, Calendar, Bar, Line, Pie, Map
 
-from app.person import Contact
+from app.person import Contact, Me
 from app.util.region_conversion import conversion_province_to_chinese
 
 os.makedirs('./data/聊天统计/', exist_ok=True)
@@ -306,20 +306,36 @@ def get_weekday(timestamp):
     return weekdays[weekday]
 
 
+# 三张饼图的数据
 def sender(wxid, time_range, my_name='', ta_name=''):
-    msg_data = msg_db.get_messages(wxid, time_range)
+    # 根据参数获取消息
+    msg_data = []
+    try:
+        msg_data = msg_db.get_messages(wxid, time_range)
+    except Exception as e:
+        print(f"fail Exception: {e}")
 
+    print(f"{wxid} find msg size: {len(msg_data)}")
+    # 消息类型 字典 统计数量
     types_count = {}
+    # 发送次数
     send_num = 0  # 发送消息的数量
+    # 周数据 字典 (key=周几, value=count)
     weekday_count = {}
     for message in msg_data:
         type_ = message[2]
         is_sender = message[4]
         subType = message[3]
         timestamp = message[5]
+        # 计算是周几
         weekday = get_weekday(timestamp)
         str_time = message[8]
+        # 如果是自己发的消息 is_sender = 1 否则 = 0
         send_num += is_sender
+        # 如果 subType 不为 0，将主类型和子类型拼接成字符串，子类型用两位数字表示（如 1 -> 01）。
+        # 如果 subType = 0，则只保留主类型。
+        # subType:0>2d 是一种格式化字符串的写法，用于将整数 subType 格式化为两位数的字符串。
+        # 如果 subType 的值不足两位，则在左侧填充 0。
         type_ = f'{type_}{subType:0>2d}' if subType != 0 else type_
         type_ = int(type_)
         if type_ in types_count:
@@ -330,8 +346,10 @@ def sender(wxid, time_range, my_name='', ta_name=''):
             weekday_count[weekday] += 1
         else:
             weekday_count[weekday] = 1
+    # 这里就能得到收到的消息数
     receive_num = len(msg_data) - send_num
     data = [[types_.get(key), value] for key, value in types_count.items() if key in types_]
+    print(f"[{my_name}] <--> [{ta_name}] 数据统计： 消息占比：{data}, 收发：{receive_num}/{send_num}, 星期分布: {weekday_count}")
     if not data:
         return {
             'chart_data_sender': None,
@@ -371,24 +389,30 @@ def sender(wxid, time_range, my_name='', ta_name=''):
         # .render("./data/聊天统计/pie_scroll_legend.html")
     )
     p3 = (
-        Pie()
+        Pie()  # 创建一个 `Pie` 对象，表示饼图。
         .add(
             "",
-            [[key, value] for key, value in weekday_count.items()],
-            radius=["40%", "75%"],
+            [[key, value] for key, value in weekday_count.items()],  # 数据项为 weekday_count 字典的键值对，转换成 [(key, value)] 的格式。
+            radius=["40%", "75%"],  # 饼图的半径，设置为一个环形图。内圈半径为 40%，外圈半径为 75%。
         )
         .set_global_opts(
-            datazoom_opts=opts.DataZoomOpts(),
-            toolbox_opts=opts.ToolboxOpts(),
-            title_opts=opts.TitleOpts(title="星期分布图"),
-            legend_opts=opts.LegendOpts(orient="vertical", pos_top="15%", pos_left="2%"),
+            datazoom_opts=opts.DataZoomOpts(),  # 配置数据缩放功能（通常用于其他类型的图表，饼图默认无法使用）。
+            toolbox_opts=opts.ToolboxOpts(),  # 工具箱选项，提供工具（如保存图片、数据视图等）。
+            title_opts=opts.TitleOpts(title="星期分布图"),  # 设置图表标题为“星期分布图”。
+            legend_opts=opts.LegendOpts(orient="vertical", pos_top="15%", pos_left="2%"),  # 配置图例，设置为垂直布局，位置在图表左上角。
         )
-        .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}\n{d}%"))
-        # .render("./data/聊天统计/pie_weekdays.html")
+        .set_series_opts(
+            label_opts=opts.LabelOpts(formatter="{b}: {c}\n{d}%")  # 配置饼图的标签格式：显示名称({b})、值({c}) 和百分比({d})。
+        )
+        # .render("./data/聊天统计/pie_weekdays.html")  # （注释掉的代码）将图表渲染为 HTML 文件，保存到指定路径。
     )
+    # 将图表的配置项（options）导出为带引号的JSON字符串
     return {
+        # 收发消息占比 饼图
         'chart_data_sender': p2.dump_options_with_quotes(),
+        # 消息类型占比 饼图
         'chart_data_types': p1.dump_options_with_quotes(),
+        # 消息在一周的占比 饼图
         'chart_data_weekday': p3.dump_options_with_quotes(),
     }
 
@@ -521,15 +545,23 @@ def my_message_counter(time_range, my_name=''):
 
 
 if __name__ == '__main__':
+    from app.web_ui.web import get_contact
+    # wxid = 'wxid_64lta87ier9q22'
+    # 39333455129  8203426743
+    wxid = '39333455129@chatroom'
+
     msg_db.init_database(path='../DataBase/Msg/MSG.db')
-    # w = wordcloud('wxid_0o18ef858vnu22')
-    # w_data = wordcloud('wxid_27hqbq7vx5hf22', True, '2023')
-    # # print(w_data)
+
+    # w = wordcloud(wxid)
+    # w_data = wordcloud(wxid, True, '2023')
+    # print(w_data)
+
     # w_data['chart_data'].render("./data/聊天统计/wordcloud.html")
-    wxid = 'wxid_0o18ef858vnu22'
     # data = month_count(wxid, time_range=None)
     # data['chart'].render("./data/聊天统计/month_count.html")
     # data = calendar_chart(wxid, time_range=None)
     # data['chart'].render("./data/聊天统计/calendar_chart.html")
-    data = sender(wxid, time_range=None, my_name='发送', ta_name='接收')
-    print(data)
+    contact = get_contact(wxid)
+
+    data = sender(wxid, time_range=None, my_name=Me().name, ta_name=contact.remark)
+    # print(data)

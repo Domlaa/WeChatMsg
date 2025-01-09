@@ -118,6 +118,7 @@ def parser_chatroom_message(messages):
         contact.set_avatar(contact.smallHeadImgBLOG)
         message.append(contact)
         updated_messages.append(tuple(message))
+    print(f"after updated_messages size = {len(updated_messages)}")
     return updated_messages
 
 
@@ -154,6 +155,7 @@ class Msg:
                 self.DB = sqlite3.connect(db_path, check_same_thread=False)
                 # '''创建游标'''
                 self.cursor = self.DB.cursor()
+                print("init msg db success")
                 self.open_flag = True
                 if lock.locked():
                     lock.release()
@@ -189,12 +191,12 @@ class Msg:
         return list
             a[0]: localId,
             a[1]: talkerId, （和strtalker对应的，不是群聊信息发送人）
-            a[2]: type,
-            a[3]: subType,
-            a[4]: is_sender,
-            a[5]: timestamp,
+            a[2]: type, 区分消息类型。文字、语音、视频等
+            a[3]: subType, type=49,subtype=57里面自己发的文本
+            a[4]: is_sender, 如果是自己发的消息 is_sender = 1 否则 = 0
+            a[5]: timestamp, 时间戳
             a[6]: status, （没啥用）
-            a[7]: str_content,
+            a[7]: str_content, 内容体
             a[8]: str_time, （格式化的时间）
             a[9]: msgSvrId,
             a[10]: BytesExtra,
@@ -213,12 +215,14 @@ class Msg:
             {'AND CreateTime>' + str(start_time) + ' AND CreateTime<' + str(end_time) if time_range else ''}
             order by CreateTime
         '''
+        # print(f"execute sql: {sql}")
         try:
             lock.acquire(True)
             self.cursor.execute(sql, [username_])
             result = self.cursor.fetchall()
         finally:
             lock.release()
+        print(f"find {username_} msg: {len(result)}")
         return parser_chatroom_message(result) if username_.__contains__('@chatroom') else result
         # result.sort(key=lambda x: x[5])
         # return self.add_sender(result)
@@ -320,6 +324,7 @@ class Msg:
         finally:
             lock.release()
         # result.sort(key=lambda x: x[5])
+        # print(f"{username_} after exe sql {result}, ")
         return parser_chatroom_message(result) if username_.__contains__('@chatroom') else result
 
     def get_messages_by_type(

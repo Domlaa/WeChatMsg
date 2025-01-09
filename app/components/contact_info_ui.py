@@ -46,6 +46,7 @@ class ContactQListWidgetItem(QListWidgetItem):
         # 用来显示name
         self.nameLabel = QLabel(self.widget)
         self.nameLabel.setText(name)
+        # print(f"set name {name}, ")
         # 用来显示avator(图像)
         self.avatorLabel = CAvatar(parent=self.widget, shape=CAvatar.Rectangle, size=QSize(60, 60),
                                    url=url, img_bytes=img_bytes)

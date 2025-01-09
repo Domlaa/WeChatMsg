@@ -113,6 +113,7 @@ class ChatInfo(QWidget):
             is_send = message[4]
             avatar = self.get_avatar_path(is_send, message,True)
             display_name = self.get_display_name(is_send, message)
+            print(f"chat: type={type_}, send={is_send}, display_name = {display_name}, avatar null = {avatar is None}")
             timestamp = message[5]
             BytesExtra = message[10]
             if type_ == 1:
