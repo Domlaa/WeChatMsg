@@ -316,7 +316,7 @@ def sender(wxid, time_range, my_name='', ta_name=''):
     except Exception as e:
         print(f"fail Exception: {e}")
 
-    print(f"{wxid} find msg size: {len(msg_data)}")
+    print(f"{wxid} find msg size: {len(msg_data)}, time_range: {time_range}")
     # 消息类型 字典 统计数量
     types_count = {}
     # 发送次数
@@ -325,7 +325,7 @@ def sender(wxid, time_range, my_name='', ta_name=''):
     weekday_count = {}
     # 发言次数 字典 (key=remark, value=count)
     chat_count = {}
-    # 发言天数 字典 (key=remark, value=count)
+    # 发言天数 字典 (key=remark, value=set | bitmap)
     chat_day_count = {}
     # 熬夜冠军 字典 (key=remark, value=count)
     night_owls = {}
@@ -357,6 +357,7 @@ def sender(wxid, time_range, my_name='', ta_name=''):
             weekday_count[weekday] = 1
         if wxid.__contains__('@chatroom'):
             contact = message[13]
+            message_date = get_format_date(timestamp)
             unique_id = get_unique_id(contact)
             # if not contact.nickName:
             #      unique_id = contract.nickName
@@ -372,20 +373,26 @@ def sender(wxid, time_range, my_name='', ta_name=''):
                 if unique_id in chat_count:
                     chat_count[unique_id] += 1
                 else:
-                    print(f"id: {unique_id} , remark: {contact.remark}, nick:{contact.nickName}, name:{contact}")
+                    # print(f"id: {unique_id} , remark: {contact.remark}, nick:{contact.nickName}, name:{contact}")
+
                     chat_count[unique_id] = 1
 
                 if unique_id in chat_day_count:
-                    chat_day_count[unique_id] += 1
+                    day_set = chat_day_count[unique_id]
+                    day_set.add(message_date)
                 else:
-                    print(f"id: {unique_id} , remark: {contact.remark}, nick:{contact.nickName}, name:{contact}")
-                    chat_day_count[unique_id] = 1
+                    chat_day_count[unique_id] = set()
 
     # 这里就能得到收到的消息数
     receive_num = len(msg_data) - send_num
     data = [[types_.get(key), value] for key, value in types_count.items() if key in types_]
     print(
-        f"[{my_name}] <--> [{ta_name}] 数据统计： 消息占比：{data}, 收发：{receive_num}/{send_num}, 星期分布: {weekday_count}, 发言次数: {chat_count}")
+        f"[{my_name}] <--> [{ta_name}] 数据统计： 消息占比：{data},"
+        f" 收发：{receive_num}/{send_num}, 星期分布: {weekday_count}, 发言次数: {chat_count}"
+    )
+    for name, dates in chat_day_count.items():
+        print(f"发言天数 {name}: {len(dates)}")
+
     if not data:
         return {
             'chart_data_sender': None,
@@ -459,7 +466,7 @@ def sender(wxid, time_range, my_name='', ta_name=''):
     chat_day_bar = (
         Bar()
         .add_xaxis(list(chat_day_count.keys()))  # 从字典的键中获取 x 轴数据（姓名）
-        .add_yaxis("发言天数", list(chat_day_count.values()))  # 从字典的值中获取 y 轴数据（得分）
+        .add_yaxis("发言天数", [len(dates) for dates in chat_day_count.values()])  # 从字典的值中获取 y 轴数据（得分）
         .reversal_axis()  # 转换坐标轴，使其变为水平条形图
         .set_global_opts(
             title_opts=opts.TitleOpts(title="活跃天数统计"),
@@ -504,11 +511,22 @@ def get_unique_id(contact) -> str:
     # if contact.remark == contact.wxid:
     return contact.wxid
 
+
+def get_format_date(timestamp) -> str:
+    # 将时间戳转换为 datetime 对象
+    dt_object = datetime.fromtimestamp(timestamp)
+    # 格式化为字符串
+    # formatted_time = dt_object.strftime('%Y-%m-%d %H:%M:%S')
+    return dt_object.strftime('%Y-%m-%d')
+
+
 def find_night_owls(chat_logs):
     night_owls = {}
 
     # 过滤出凌晨0点到5点之间的记录
     for log in chat_logs:
+        # strptime 是 Python 的 datetime 模块中的一个函数，
+        # 用于将字符串解析为 datetime 对象。它的全称是 "string parse time"
         timestamp = datetime.strptime(log["timestamp"], "%Y-%m-%d %H:%M:%S")
         hour = timestamp.hour
 
@@ -672,6 +690,6 @@ if __name__ == '__main__':
     # data = calendar_chart(wxid, time_range=None)
     # data['chart'].render("./data/聊天统计/calendar_chart.html")
     contact = get_contact(wxid)
-
-    data = sender(wxid, time_range=None, my_name=Me().name, ta_name=contact.remark)
+    time_range = ['2024-01-01 00:00:00','2024-12-31 00:00:00']
+    data = sender(wxid, time_range=time_range, my_name=Me().name, ta_name=contact.remark)
     # print(data)
