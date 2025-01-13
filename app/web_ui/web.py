@@ -270,10 +270,5 @@ def get_counter():
     return jsonify(data)
 
 
-# 发言次数排行（前十）；
-# 水群天数排行（前十）；
-# 发言次数最多；（已有）
-# 熬夜冠军（0-5点最后一次发言）；
-
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0')

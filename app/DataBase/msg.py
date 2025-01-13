@@ -118,7 +118,6 @@ def parser_chatroom_message(messages):
         contact.set_avatar(contact.smallHeadImgBLOG)
         message.append(contact)
         updated_messages.append(tuple(message))
-    print(f"after updated_messages size = {len(updated_messages)}")
     return updated_messages
 
 

@@ -62,6 +62,7 @@ def wordcloud_(wxid, time_range=None):
         WordCloud(init_opts=opts.InitOpts())
         .add(series_name="聊天文字", data_pair=text_data, word_size_range=[5, 100])
     )
+    print(f"wxid:{wxid}, keyword:{keyword}, keyword_max_num:{max_num}, text_data:{text_data}")
     # return w.render_embed()
     return {
         'chart_data': w.dump_options_with_quotes(),
@@ -73,6 +74,7 @@ def wordcloud_(wxid, time_range=None):
 
 def get_wordcloud(text):
     total_msg_len = len(text)
+    # 加载自定义词典，提升对特定领域术语或新词的分词准确性。
     jieba.load_userdict('./app/data/new_words.txt')
     # 使用jieba进行分词，并加入停用词
     words = jieba.cut(text)
@@ -86,21 +88,28 @@ def get_wordcloud(text):
     stopwords = set()
     stopwords_file = './app/resources/data/stopwords.txt'
     if not os.path.exists(stopwords_file):
+        # 如果文件路径不存在，会从应用打包后的资源目录中查找。
         resource_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
         stopwords_file = os.path.join(resource_dir, 'app', 'resources', 'data', 'stopwords.txt')
     with open(stopwords_file, "r", encoding="utf-8") as stopword_file:
         stopwords = set(stopword_file.read().splitlines())
+        # 使用 set.union 合并两个停用词集合
         stopwords = stopwords.union(stopwords1)
 
+    # 对 word_count 进行过滤，保留：
+    # 长度大于1 的词语。
+    # 不属于停用词集合 stopwords 的词语。
     filtered_word_count = {word: count for word, count in word_count.items() if len(word) > 1 and word not in stopwords}
     # 转换为词云数据格式
     data = [(word, count) for word, count in filtered_word_count.items()]
     # text_data = data
     data.sort(key=lambda x: x[1], reverse=True)
-
+    # 截取前 100 个高频词语
     text_data = data[:100] if len(data) > 100 else data
     # 创建词云图
     if text_data:
+        # 提取最高频词作为关键字 keyword。
+        # 提取其频次 max_num。
         keyword, max_num = text_data[0]
     else:
         keyword, max_num = '', 0
@@ -108,6 +117,7 @@ def get_wordcloud(text):
         WordCloud()
         .add(series_name="聊天文字", data_pair=text_data, word_size_range=[5, 40])
     )
+    print(f"keyword: {keyword}, keyword_max_num:{max_num}, text_data:{text_data}")
     return {
         'chart_data_wordcloud': w.dump_options_with_quotes(),
         'keyword': keyword,
@@ -115,9 +125,7 @@ def get_wordcloud(text):
     }
 
 
-def wordcloud_christmas(wxid, time_range=None, year='2023'):
-    import jieba
-
+def wordcloud_christmas(wxid, time_range=None):
     txt_messages = msg_db.get_messages_by_type(wxid, MsgType.TEXT, time_range=time_range)
     if not txt_messages:
         return {
@@ -327,7 +335,7 @@ def sender(wxid, time_range, my_name='', ta_name=''):
     chat_count = {}
     # 发言天数 字典 (key=remark, value=set | bitmap)
     chat_day_count = {}
-    # 熬夜冠军 字典 (key=remark, value=count)
+    # 熬夜冠军 字典 (key=date, value=wxid)
     night_owls = {}
 
     for message in msg_data:
@@ -373,8 +381,7 @@ def sender(wxid, time_range, my_name='', ta_name=''):
                 if unique_id in chat_count:
                     chat_count[unique_id] += 1
                 else:
-                    # print(f"id: {unique_id} , remark: {contact.remark}, nick:{contact.nickName}, name:{contact}")
-
+                    print(f"id: {unique_id} , remark: {contact.remark}, nick:{contact.nickName}, type:{type_}, subType:{subType}")
                     chat_count[unique_id] = 1
 
                 if unique_id in chat_day_count:
@@ -383,6 +390,24 @@ def sender(wxid, time_range, my_name='', ta_name=''):
                 else:
                     chat_day_count[unique_id] = set()
 
+                    # strptime 是 Python 的 datetime 模块中的一个函数，
+                    # 用于将字符串解析为 datetime 对象。它的全称是 "string parse time"
+                stamp = datetime.fromtimestamp(timestamp)
+                hour = stamp.hour
+                # 检查时间是否在0点到5点之间
+                if 0 <= hour < 6:
+                    date_str = stamp.date()  # 获取日期部分
+                    if date_str not in night_owls:
+                        cur_owls = {"timestamp": timestamp, "unique_id": unique_id, "content": str_content}
+                        night_owls[date_str] = cur_owls
+                    else:
+                        # 比较当前记录的时间是否比已有记录的时间晚
+                        existing_timestamp = night_owls[date_str]["timestamp"]
+                        if timestamp > existing_timestamp:
+                            # 缓存每天最晚的聊天记录
+                            cur_owls = {"timestamp": timestamp, "unique_id": unique_id, "content": str_content}
+                            night_owls[date_str] = cur_owls
+
     # 这里就能得到收到的消息数
     receive_num = len(msg_data) - send_num
     data = [[types_.get(key), value] for key, value in types_count.items() if key in types_]
@@ -390,8 +415,22 @@ def sender(wxid, time_range, my_name='', ta_name=''):
         f"[{my_name}] <--> [{ta_name}] 数据统计： 消息占比：{data},"
         f" 收发：{receive_num}/{send_num}, 星期分布: {weekday_count}, 发言次数: {chat_count}"
     )
-    for name, dates in chat_day_count.items():
-        print(f"发言天数 {name}: {len(dates)}")
+    # for name, dates in chat_day_count.items():
+    #     print(f"发言天数 {name}: {len(dates)}")
+
+    owls_champion = {}
+    for date, chat in night_owls.items():
+        unique_id = chat["unique_id"]
+        content = chat["content"]
+        time = get_format_date(chat["timestamp"], '%Y-%m-%d %H:%M:%S')
+        # print(f"熬夜冠军: {unique_id}[{time}]")
+        if unique_id in owls_champion:
+            owls_champion[unique_id] += 1
+        else:
+            owls_champion[unique_id] = 1
+
+    for name, count in owls_champion.items():
+        print(f"熬夜天数 {name}: {count}")
 
     if not data:
         return {
@@ -512,36 +551,12 @@ def get_unique_id(contact) -> str:
     return contact.wxid
 
 
-def get_format_date(timestamp) -> str:
+def get_format_date(timestamp, format_str='%Y-%m-%d') -> str:
     # 将时间戳转换为 datetime 对象
     dt_object = datetime.fromtimestamp(timestamp)
     # 格式化为字符串
     # formatted_time = dt_object.strftime('%Y-%m-%d %H:%M:%S')
-    return dt_object.strftime('%Y-%m-%d')
-
-
-def find_night_owls(chat_logs):
-    night_owls = {}
-
-    # 过滤出凌晨0点到5点之间的记录
-    for log in chat_logs:
-        # strptime 是 Python 的 datetime 模块中的一个函数，
-        # 用于将字符串解析为 datetime 对象。它的全称是 "string parse time"
-        timestamp = datetime.strptime(log["timestamp"], "%Y-%m-%d %H:%M:%S")
-        hour = timestamp.hour
-
-        # 检查时间是否在0点到5点之间
-        if 0 <= hour < 6:
-            date_str = timestamp.date()  # 获取日期部分
-            if date_str not in night_owls:
-                night_owls[date_str] = log
-            else:
-                # 比较当前记录的时间是否比已有记录的时间晚
-                existing_timestamp = datetime.strptime(night_owls[date_str]["timestamp"], "%Y-%m-%d %H:%M:%S")
-                if timestamp > existing_timestamp:
-                    night_owls[date_str] = log
-
-    return night_owls
+    return dt_object.strftime(format_str)
 
 
 def contacts_analysis(contacts):
@@ -675,8 +690,11 @@ if __name__ == '__main__':
     from app.web_ui.web import get_contact
 
     # wxid = 'wxid_64lta87ier9q22'
-    # 39333455129  8203426743 22050612613
-    wxid = '22050612613@chatroom'
+    # 39333455129
+    # home 8203426743
+    # 610 22050612613
+    # luo 17278805432
+    wxid = '17278805432@chatroom'
 
     msg_db.init_database(path='../DataBase/Msg/MSG.db')
 
@@ -690,6 +708,8 @@ if __name__ == '__main__':
     # data = calendar_chart(wxid, time_range=None)
     # data['chart'].render("./data/聊天统计/calendar_chart.html")
     contact = get_contact(wxid)
-    time_range = ['2024-01-01 00:00:00','2024-12-31 00:00:00']
+    # time_range = ['2024-01-01 00:00:00','2024-12-31 00:00:00']
+    time_range = None
     data = sender(wxid, time_range=time_range, my_name=Me().name, ta_name=contact.remark)
+    # wordcloud_(wxid, time_range)
     # print(data)
