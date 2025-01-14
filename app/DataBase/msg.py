@@ -154,10 +154,12 @@ class Msg:
                 self.DB = sqlite3.connect(db_path, check_same_thread=False)
                 # '''创建游标'''
                 self.cursor = self.DB.cursor()
-                print("init msg db success")
+                logger.debug(f"init Msg db success: {db_path}")
                 self.open_flag = True
                 if lock.locked():
                     lock.release()
+            else:
+                logger.debug(f"msg db path not exist in {db_path}")
 
     def add_sender(self, messages):
         """
@@ -434,6 +436,7 @@ class Msg:
 
     def get_contact(self, contacts):
         if not self.open_flag:
+            logger.debug(f"get_contact fail, msg db not init")
             return None
         try:
             lock.acquire(True)
@@ -885,9 +888,9 @@ if __name__ == '__main__':
     db_path = "./Msg/MSG.db"
     msg = Msg()
     msg.init_database()
-    wxid = 'wxid_0o18ef858vnu22'
-    wxid = '24521163022@chatroom'
-    wxid = 'wxid_vtz9jk9ulzjt22'  # si
+    # wxid = 'wxid_0o18ef858vnu22'
+    # wxid = '24521163022@chatroom'
+    wxid = 'wxid_hpdxs30hqzlp21'  # si
     print()
     time_range = ('2023-01-01 00:00:00', '2024-01-01 00:00:00')
     print(msg.get_messages_calendar(wxid))

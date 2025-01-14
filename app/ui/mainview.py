@@ -295,7 +295,9 @@ class MainWinController(QMainWindow, mainwindow.Ui_MainWindow, QCursorGif):
         # self.statusbar.addPermanentWidget(self.info)
         # self.statusbar.showMessage('遇到问题可添加QQ群咨询', 5000)
         self.load_flag = False
+        logger.debug("load_data")
         self.load_data()
+        logger.debug("load_data finish")
         self.load_num = 0
         self.label = QLabel(self)
         self.label.setGeometry((self.width() - 300) // 2, (self.height() - 100) // 2, 300, 100)
@@ -386,10 +388,12 @@ class MainWinController(QMainWindow, mainwindow.Ui_MainWindow, QCursorGif):
 
     def loading(self, a0):
         self.load_num += 1
+        logger.debug(f"start loading")
         if self.load_num == 1:
             self.label.clear()
             self.label.hide()
             self.okSignal.emit(True)
+            logger.debug(f"end loading")
             self.listWidget.setVisible(True)
             self.stackedWidget.setVisible(True)
             self.stopBusy()

@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QWidget, QMessageBox
 
 from app.components.QCursorGif import QCursorGif
 from app.decrypt.get_bias_addr import BiasAddr
+from app.log import logger
 from .getBiasAddrUi import Ui_Form
 
 Stylesheet = """
@@ -122,6 +123,8 @@ class MyThread(QThread):
         self.db_path = db_path
 
     def run(self):
+        logger.debug(f"set_bias_addr start")
         bias_addr = BiasAddr(self.account, self.mobile, self.name, self.key, self.db_path)
         data = bias_addr.run(logging_path=True)
         self.signal.emit(data)
+        logger.debug(f"set_bias_addr end")

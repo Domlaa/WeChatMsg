@@ -15,6 +15,7 @@ from app.components.QCursorGif import QCursorGif
 from app.config import INFO_FILE_PATH, DB_DIR
 from app.decrypt import get_wx_info, decrypt
 from app.log import logger
+from app.person import Me
 from app.util import path
 from . import decryptUi
 from ...Icon import Icon
@@ -84,7 +85,9 @@ class DecryptControl(QWidget, decryptUi.Ui_Dialog, QCursorGif):
             self.ready = True
             self.info = result[0]
             self.label_key.setText(self.info['key'])
+            # set self wxid
             self.label_wxid.setText(self.info['wxid'])
+            Me().wxid = self.info['wxid']
             self.lineEdit_name.setText(self.info['name'])
             self.lineEdit_phone.setText(self.info['mobile'])
             self.label_pid.setText(str(self.info['pid']))

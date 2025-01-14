@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -10,6 +11,7 @@ from app.ui.Icon import Icon
 from .contactInfo import ContactInfo
 from .contactUi import Ui_Form
 from ...DataBase.hard_link import decodeExtraBuf
+from ...log import logger
 from ...util import search
 
 # 美化样式表
@@ -151,7 +153,9 @@ class ShowContactThread(QThread):
         super().__init__()
 
     def run(self) -> None:
+        logger.debug(f"contact: get_contact in db")
         contact_info_lists = micro_msg_db.get_contact()
+        logger.debug(f"contact: get_contact finish, size:{len(contact_info_lists)}")
         if not contact_info_lists:
             self.load_finish_signal.emit(True)
             # QMessageBox.critical(None, "错误", "数据库错误，请重启电脑后重试")
@@ -180,6 +184,7 @@ class ShowContactThread(QThread):
             contact.set_avatar(contact.smallHeadImgBLOG)
             self.showSingal.emit(contact)
             # pprint(contact.__dict__)
+        logger.debug(f"contact load_finish_signal")
         self.load_finish_signal.emit(True)
 
 

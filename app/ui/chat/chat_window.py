@@ -1,3 +1,4 @@
+import logging
 import shutil
 
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -11,6 +12,7 @@ from app.ui.Icon import Icon
 from app.util import search
 from .chatUi import Ui_Form
 from .chat_info import ChatInfo
+from ...log import logger
 
 # 美化样式表
 Stylesheet = """
@@ -149,6 +151,7 @@ class ShowContactThread(QThread):
         super().__init__()
 
     def run(self) -> None:
+        logger.debug(f"chat: get_contact in db")
         contact_info_lists = micro_msg_db.get_contact()
         if not contact_info_lists:
             self.load_finish_signal.emit(True)
@@ -174,6 +177,7 @@ class ShowContactThread(QThread):
             contact.set_avatar(contact.smallHeadImgBLOG)
             self.showSingal.emit(contact)
             # pprint(contact.__dict__)
+        logger.info(f"chat load_finish_signal")
         self.load_finish_signal.emit(True)
 
 

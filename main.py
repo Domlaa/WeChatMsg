@@ -23,8 +23,7 @@ def excepthook(exc_type, exc_value, traceback_):
     # 在这里处理全局异常
 
     error_message = ExceptionHanding(exc_type, exc_value, traceback_)
-    txt = '您可添加QQ群发送log文件以便解决该问题'
-    msg = f"Exception Type: {exc_type.__name__}\nException Value: {exc_value}\ndetails: {error_message}\n\n{txt}"
+    msg = f"Exception Type: {exc_type.__name__}\nException Value: {exc_value}\ndetails: {error_message}\n\n"
     logger.error(f'程序发生了错误:\n\n{msg}')
     # 创建一个 QMessageBox 对象
     error_box = QMessageBox()
@@ -87,7 +86,7 @@ class ViewController(QWidget):
             self.viewMainWindow.show()
             end = time.time()
             self.viewMainWindow.init_ui()
-            print('ok', '本次加载用了', end - start, 's')
+            logger.debug(f"加载耗时:{end - start}")
 
         except Exception as e:
             print(f"Exception: {e}")

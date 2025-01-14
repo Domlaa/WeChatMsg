@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout
 
 from app.DataBase import msg_db, hard_link_db
 from app.components.bubble_message import BubbleMessage, ChatWidget, Notice
+from app.log import logger
 from app.person import Me
 from app.util import get_abs_path
 from app.util.emoji import get_emoji
@@ -113,7 +114,7 @@ class ChatInfo(QWidget):
             is_send = message[4]
             avatar = self.get_avatar_path(is_send, message,True)
             display_name = self.get_display_name(is_send, message)
-            print(f"chat: type={type_}, send={is_send}, display_name = {display_name}, avatar null = {avatar is None}")
+            # print(f"chat: type={type_}, send={is_send}, display_name = {display_name}, avatar null = {avatar is None}")
             timestamp = message[5]
             BytesExtra = message[10]
             if type_ == 1:
@@ -181,9 +182,11 @@ class ShowChatThread(QThread):
 
     def run(self) -> None:
         messages = msg_db.get_message_by_num(self.wxid, self.last_message_id)
+        logger.debug(f"chat info: get_message_by_num in db, size: {len(messages)}")
         if messages:
             self.last_message_id = messages[-1][0]
         for message in messages:
             self.showSingal.emit(message)
         self.msg_id += 1
         self.finishSingal.emit(1)
+        logger.debug(f"chat info: get_message_by_num in db finish")

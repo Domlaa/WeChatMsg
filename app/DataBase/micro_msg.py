@@ -2,6 +2,7 @@ import os.path
 import sqlite3
 import threading
 
+from app.log import logger
 lock = threading.Lock()
 db_path = "./app/Database/Msg/MicroMsg.db"
 
@@ -28,16 +29,21 @@ class MicroMsg:
         self.open_flag = False
         self.init_database()
 
-    def init_database(self):
+    def init_database(self, path=None):
+        global db_path
         if not self.open_flag:
+            if path:
+                db_path = path
             if os.path.exists(db_path):
                 self.DB = sqlite3.connect(db_path, check_same_thread=False)
                 # '''创建游标'''
                 self.cursor = self.DB.cursor()
-                print("init MicroMsg db success")
+                logger.debug(f"init MicroMsg db success: {db_path}")
                 self.open_flag = True
                 if lock.locked():
                     lock.release()
+            else:
+                logger.debug(f"MicroMsg db path not exist in {db_path}")
 
     def get_contact(self):
         if not self.open_flag:
@@ -81,6 +87,7 @@ class MicroMsg:
 
     def get_contact_by_username(self, username):
         if not self.open_flag:
+            logger.debug(f"get_contact_by_username fail, micro_msg db not init")
             return None
         try:
             lock.acquire(True)
@@ -135,19 +142,3 @@ class MicroMsg:
 
     def __del__(self):
         self.close()
-
-
-if __name__ == '__main__':
-    db_path = "./app/database/Msg/MicroMsg.db"
-    msg = MicroMsg()
-    msg.init_database()
-    contacts = msg.get_contact()
-    from app.DataBase.hard_link import decodeExtraBuf
-
-    s = {'wxid_vtz9jk9ulzjt22','wxid_zu9l4wxdv1pa22', 'wxid_0o18ef858vnu22','wxid_8piw6sb4hvfm22','wxid_e7ypfycxpnu322','wxid_oxmg02c8kwxu22','wxid_7pp2fblq7hkq22','wxid_h1n9niofgyci22'}
-    for contact in contacts:
-        if contact[0] in s:
-            print(contact[:7])
-            buf = contact[9]
-            info = decodeExtraBuf(buf)
-            print(info)

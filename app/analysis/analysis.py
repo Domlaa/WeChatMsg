@@ -10,6 +10,7 @@ from app.DataBase import msg_db, MsgType, misc_db, micro_msg_db, hard_link_db, m
 from pyecharts import options as opts
 from pyecharts.charts import WordCloud, Calendar, Bar, Line, Pie, Map
 
+from app.analysis.db_bootstrap import init_local_db
 from app.person import Contact, Me
 from app.util.region_conversion import conversion_province_to_chinese
 from datetime import datetime
@@ -47,6 +48,7 @@ def wordcloud_(wxid, time_range=None):
         stopwords_file = os.path.join(resource_dir, 'app', 'resources', 'data', 'stopwords.txt')
     with open(stopwords_file, "r", encoding="utf-8") as stopword_file:
         stopwords = set(stopword_file.read().splitlines())
+        # print(f"stopwords1:{stopwords1}, stopwords:{stopwords}")
         stopwords = stopwords.union(stopwords1)
     filtered_word_count = {word: count for word, count in word_count.items() if len(word) > 1 and word not in stopwords}
 
@@ -365,14 +367,11 @@ def sender(wxid, time_range, my_name='', ta_name=''):
             weekday_count[weekday] = 1
         if wxid.__contains__('@chatroom'):
             contact = message[13]
+            # @openim
+            if contact.wxid.endswith('@openim'):
+                continue
             message_date = get_format_date(timestamp)
             unique_id = get_unique_id(contact)
-            # if not contact.nickName:
-            #      unique_id = contract.nickName
-            # elif not contact.remark:
-            #     unique_id = contract.remark
-            # else:
-            #     unique_id = contract.wxid
             if not unique_id:
                 # print(f"uniqueId null: {str_content}")
                 pass
@@ -381,17 +380,19 @@ def sender(wxid, time_range, my_name='', ta_name=''):
                 if unique_id in chat_count:
                     chat_count[unique_id] += 1
                 else:
-                    print(f"id: {unique_id} , remark: {contact.remark}, nick:{contact.nickName}, type:{type_}, subType:{subType}")
+                    # print(f"id: {unique_id} , remark: {contact.remark}, nick:{contact.nickName}, type:{type_}, subType:{subType}")
                     chat_count[unique_id] = 1
 
                 if unique_id in chat_day_count:
                     day_set = chat_day_count[unique_id]
                     day_set.add(message_date)
                 else:
-                    chat_day_count[unique_id] = set()
+                    day_set = set()
+                    day_set.add(message_date)
+                    chat_day_count[unique_id] = day_set
 
-                    # strptime 是 Python 的 datetime 模块中的一个函数，
-                    # 用于将字符串解析为 datetime 对象。它的全称是 "string parse time"
+                # strptime 是 Python 的 datetime 模块中的一个函数，
+                # 用于将字符串解析为 datetime 对象。它的全称是 "string parse time"
                 stamp = datetime.fromtimestamp(timestamp)
                 hour = stamp.hour
                 # 检查时间是否在0点到5点之间
@@ -413,11 +414,12 @@ def sender(wxid, time_range, my_name='', ta_name=''):
     data = [[types_.get(key), value] for key, value in types_count.items() if key in types_]
     print(
         f"[{my_name}] <--> [{ta_name}] 数据统计： 消息占比：{data},"
-        f" 收发：{receive_num}/{send_num}, 星期分布: {weekday_count}, 发言次数: {chat_count}"
+        f" 收发：{receive_num}/{send_num}, 星期分布: {weekday_count}"
     )
     # for name, dates in chat_day_count.items():
     #     print(f"发言天数 {name}: {len(dates)}")
 
+    # key=id, value=count
     owls_champion = {}
     for date, chat in night_owls.items():
         unique_id = chat["unique_id"]
@@ -429,8 +431,23 @@ def sender(wxid, time_range, my_name='', ta_name=''):
         else:
             owls_champion[unique_id] = 1
 
-    for name, count in owls_champion.items():
-        print(f"熬夜天数 {name}: {count}")
+    # for name, count in owls_champion.items():
+    #     print(f"熬夜天数 {name}: {count}")
+
+    # 发言次数 字典 (key=remark, value=count)
+    # reverse=True 降序排序，即集合大的在前。
+    top_chat_count = sorted(chat_count.items(), key=lambda item: item[1], reverse=True)
+    print(f"排序发言次数: {top_chat_count[:10]}")
+    chat_count = dict(top_chat_count[:10])
+
+    # 发言天数 字典 (key=remark, value=set | bitmap)
+    top_chat_day_count = sorted(chat_day_count.items(), key=lambda item: len(item[1]), reverse=True)
+    # print(f"排序发言天数: {top_chat_day_count[:10]}")
+    chat_day_count = dict(top_chat_day_count[:10])
+
+    # key=id, value=count
+    top_owls_champion = sorted(owls_champion.items(), key=lambda item: item[1], reverse=False)
+    owls_champion = dict(top_owls_champion[:10])
 
     if not data:
         return {
@@ -494,7 +511,7 @@ def sender(wxid, time_range, my_name='', ta_name=''):
     chat_bar = (
         Bar()
         .add_xaxis(list(chat_count.keys()))  # 从字典的键中获取 x 轴数据（姓名）
-        .add_yaxis("发言次数", list(chat_count.values()))  # 从字典的值中获取 y 轴数据（得分）
+        .add_yaxis("发言次数", list(chat_count.values()))  # 从字典的值中获取 y 轴数据
         .reversal_axis()  # 转换坐标轴，使其变为水平条形图
         .set_global_opts(
             title_opts=opts.TitleOpts(title="活跃度统计"),
@@ -515,8 +532,8 @@ def sender(wxid, time_range, my_name='', ta_name=''):
     )
     night_owls_bar = (
         Bar()
-        .add_xaxis(list(chat_day_count.keys()))  # 从字典的键中获取 x 轴数据（姓名）
-        .add_yaxis("熬夜冠军", list(chat_day_count.values()))  # 从字典的值中获取 y 轴数据（得分）
+        .add_xaxis(list(owls_champion.keys()))  # 从字典的键中获取 x 轴数据（姓名）
+        .add_yaxis("熬夜冠军", list(owls_champion.values()))  # 从字典的值中获取 y 轴数据（得分）
         .reversal_axis()  # 转换坐标轴，使其变为水平条形图
         .set_global_opts(
             title_opts=opts.TitleOpts(title="熬夜冠军统计"),
@@ -695,8 +712,7 @@ if __name__ == '__main__':
     # 610 22050612613
     # luo 17278805432
     wxid = '17278805432@chatroom'
-
-    msg_db.init_database(path='../DataBase/Msg/MSG.db')
+    init_local_db()
 
     # w = wordcloud(wxid)
     # w_data = wordcloud(wxid, True, '2023')
