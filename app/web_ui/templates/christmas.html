@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>微信年度聊天报告</title>
+    <title>单聊年度聊天报告</title>
     <link rel="stylesheet" href="https://memotrace.cn/static/css/style.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@latest/dist/echarts.min.js"></script>
     <script type="text/javascript" src="https://assets.pyecharts.org/assets/v5/echarts-wordcloud.min.js"></script>
@@ -229,35 +229,9 @@
                 <div id="calendar-chart" class="calendar-chart"></div>
             </div>
     </div>
-    <div class="section" style="text-align: center;display:flex;justify-content: center;align-items: center;"> 
-        <h1>分享此页面</h1>
-        <div>
-            <a id="share" href="https://memotrace.cn/" target="_blank">https://memotrace.cn/</a>
-        </div>
-        <button onclick="confirmUpload()">上传并显示二维码</button>
-        <div id="qrcode"></div>
-        <a href="https://memotrace.cn/" target="_blank">点击生成我的年度聊天报告</a>
-        <div style="height:400px"></div>
-        <div>
-            <img src="https://memotrace.cn/img/logo3.0.png" alt="Logo">
-            <p class="text-larger mb-2">Copyrights © 2022-2024 <a href="https://memotrace.cn/">SiYuan</a> 版权所有. Inc.</p>
-            <!-- <span class="op-07">请遵守所在国家的相关法律法规</span> -->
-        </div>
-    </div>
-    <!-- Add more sections as needed -->
+
 </div>
   <script>
-        function confirmUpload() {
-            var userConfirmed = confirm("注意！！！\n本页面将会上传至云端，别人可通过链接查看该网页，该操作不会上传您的其他任何信息，页面将在下个版本更新之后删除，请注意链接生效时间。\n点击“确认”代表您同意上传，否则请点击“取消");
-
-            if (userConfirmed) {
-                // User clicked OK, perform the upload and display QR code
-                uploadAndDisplayQRCode();
-            } else {
-                // User clicked Cancel or closed the dialog
-                alert("Upload canceled.");
-            }
-        }
 
         function uploadAndDisplayQRCode() {
             // Simulate a GET request to the server endpoint
